@@ -69,9 +69,10 @@ export default class Advertising {
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync(divIds);
                     window.prebidSent = true;
-                    window.amazonSent && window.prebidSent
+                    window.amazonSent && window.prebidSent && !window.adRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
                         : null;
+                    window.adRequestSent = window.prebidSent && window.amazonSent ? true : false;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 }
             })
@@ -91,9 +92,10 @@ export default class Advertising {
                 window.googletag.cmd.push(function() {
                     window.apstag.setDisplayBids();
                     window.amazonSent = true;
-                    window.prebidSent && window.amazonSent
+                    window.prebidSent && window.amazonSent && !window.adRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
                         : null;
+                    window.adRequestSent = window.prebidSent && window.amazonSent ? true : false;
                     // this.amazon = true;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 });
