@@ -76,7 +76,7 @@ export default class Advertising {
                 }
             })
         );
-        console.log('DEBUG', '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+
         Advertising[queueForAmazon]('fetchBids', [
             {
                 slots: [
