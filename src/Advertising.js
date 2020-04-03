@@ -141,7 +141,7 @@ console.log("AD DEBUG TEARDOWN CALLED.");
             return (this.customEventCallbacks[customEventId][id] = customEventHandlers[customEventId]);
         });
 console.log("AD DEBUG ACTIVATE CALLED.", slots);
-console.log("AD DEBUG ACTIVATE CALLED - continued.", slots);
+console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
         Advertising[queueForPrebid](() =>
             window.pbjs.requestBids({
                 adUnitCodes: [id],
