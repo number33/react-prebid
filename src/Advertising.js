@@ -72,7 +72,7 @@ export default class Advertising {
                     window.amazonSent && window.prebidSent && !window.adRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
                         : null;
-                    window.adRequestSent = window.prebidSent && window.amazonSent ? true : false;
+                    window.adRequestSent = window.prebidSent && window.amazonSent;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 }
             })
@@ -95,7 +95,7 @@ export default class Advertising {
                     window.prebidSent && window.amazonSent && !window.adRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
                         : null;
-                    window.adRequestSent = window.prebidSent && window.amazonSent ? true : false;
+                    window.adRequestSent = window.prebidSent && window.amazonSent;
                     // this.amazon = true;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 });
