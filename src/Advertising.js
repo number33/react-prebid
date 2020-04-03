@@ -15,11 +15,13 @@ const setupCustomEvents = Symbol('setup custom events (private method)');
 const setupCustomEvent = Symbol('setup custom event (private method)');
 const teardownCustomEvents = Symbol('teardown custom events (private method)');
 const withQueue = Symbol('with queue (private method)');
+const withAmaQueue = Symbol('with Amazon queue (private method)');
 const queueForGPT = Symbol('queue for GPT (private method)');
 const queueForPrebid = Symbol('queue for Prebid (private method)');
+const queueForAmazon = Symbol('queue for Amazon (private method)');
 const setDefaultConfig = Symbol('set default config (private method)');
 const executePlugins = Symbol('execute plugins (private method)');
-const sendAdServeRequest = Symbol('Send ad requests to GAM');
+// const sendAdServeRequest = Symbol('Send ad requests to GAM');
 
 export default class Advertising {
     constructor(config, plugins = []) {
@@ -31,9 +33,6 @@ export default class Advertising {
         this.customEventCallbacks = {};
         this.customEventHandlers = {};
         this.queue = [];
-        this.prebid = false;
-        this.amazon = false;
-        this.adserverRequestSent = false;
 
         if (config) {
             this[setDefaultConfig]();
@@ -48,8 +47,8 @@ export default class Advertising {
         this[setupCustomEvents]();
         await Promise.all([
             Advertising[queueForPrebid](this[setupPrebid].bind(this)),
-            Advertising[queueForGPT](this[setupGpt].bind(this))
-            Advertising[queueForAmazon](this[setupAmazon].bind(this))
+            Advertising[queueForGPT](this[setupGpt].bind(this)),
+            Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
         ]);
         if (queue.length === 0) {
             return;
@@ -69,31 +68,38 @@ export default class Advertising {
                 adUnitCodes: divIds,
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync(divIds);
-                    // Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots));
-                    this.prebid = true;
-                    Advertising[sendAdServeRequest](selectedSlots);
+                    window.prebidSent = true;
+                    window.amazonSent && window.prebidSent
+                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
+                        : null;
+                    // Advertising[sendAdServeRequest](selectedSlots);
                 }
             })
         );
-console.log("DEBUG", "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        Advertising[queueForAmazon](() =>
-            window.apstag.fetchBids(
-              {
-                slots: [{
-                  slotID: 'div-gpt-ad-bigbox',
-                  slotName: '/homepage/div-gpt-ad-bigbox',
-                  sizes: [[300, 250]]
-                }]
-              },
-              function(bids) {
-                googletag.cmd.push(function() {
-                  apstag.setDisplayBids();
-                  this.amazon = true;
-                  Advertising[sendAdServeRequest]();
-                })
-              }
-            )
-        );
+        console.log('DEBUG', '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%');
+        Advertising[queueForAmazon]('fetchBids', [
+            {
+                slots: [
+                    {
+                        slotID: 'div-gpt-ad-bigbox',
+                        slotName: '/homepage/div-gpt-ad-bigbox',
+                        sizes: [[300, 250]]
+                    }
+                ]
+            },
+            function(bids) {
+                window.googletag.cmd.push(function() {
+                    window.apstag.setDisplayBids();
+                    window.amazonSent = true;
+                    window.prebidSent && window.amazonSent
+                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
+                        : null;
+                    // this.amazon = true;
+                    // Advertising[sendAdServeRequest](selectedSlots);
+                });
+            }
+        ]);
+        // Advertising[queueForAmazon](() => Advertising[sendAdServeRequest](selectedSlots))
     }
 
     async teardown() {
@@ -244,11 +250,12 @@ console.log("DEBUG", "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         }
     }
 
-    [sendAdServeRequest](selectedSlots) {
-      if (this.prebid && this.amazon && !this.adserverRequestSent) {
-        Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots));
-      }
-    }
+    // [sendAdServeRequest](selectedSlots) {
+    //   if (this.prebid /*&& this.amazon*/ && !this.adserverRequestSent) {
+    //     this.adserverRequestSent = true;
+    //     Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots));
+    //   }
+    // }
 
     [setupPrebid]() {
         this[executePlugins]('setupPrebid');
@@ -258,11 +265,10 @@ console.log("DEBUG", "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     }
 
     [setupAmazon]() {
-      this[executePlugins]('setupAmazon');
-      apstag.init({
-        pubID: "3392",
-        adServer: 'googletag'
-      });
+        return {
+            pubID: '3392',
+            adServer: 'googletag'
+        };
     }
 
     [teardownPrebid]() {
@@ -322,8 +328,19 @@ console.log("DEBUG", "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         return Advertising[withQueue](window.pbjs.que, func);
     }
 
-    static [queueForAmazon](func) {
-        return Advertising[withQueue](window.apstag.fetchBids, func);
+    static [queueForAmazon](key, param) {
+        if (key === 'init') {
+            return Advertising[withAmaQueue](window.apstag.init, param);
+        }
+        return Advertising[withAmaQueue](window.apstag.fetchBids, param);
+    }
+
+    static [withAmaQueue](queue, param) {
+        return new Promise(resolve => {
+            // queue.apply(null, param);
+            queue(...param);
+            resolve();
+        });
     }
 
     static [withQueue](queue, func) {
