@@ -22,6 +22,7 @@ const queueForAmazon = Symbol('queue for Amazon (private method)');
 const setDefaultConfig = Symbol('set default config (private method)');
 const executePlugins = Symbol('execute plugins (private method)');
 // const sendAdServeRequest = Symbol('Send ad requests to GAM');
+const setupSlotBidsSent = Symbol('Bids requested for slots');
 
 export default class Advertising {
     constructor(config, plugins = []) {
@@ -50,6 +51,7 @@ export default class Advertising {
             Advertising[queueForGPT](this[setupGpt].bind(this))
             // Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
         ]);
+console.log("AD DEBUG SETUP QUEUE", queue);
         if (queue.length === 0) {
             return;
         }
@@ -69,11 +71,11 @@ console.log("AD DEBUG SETUP CALLED.");
                 adUnitCodes: divIds,
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync(divIds);
-                    window.prebidSent = true;
-                    window.amazonSent && window.prebidSent && !window.adRequestSent
+                    window.setupPrebidSent = true;
+                    window.setupAmazonSent && window.setupPrebidSent && !window.setupAdRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
                         : null;
-                    window.adRequestSent = window.prebidSent && window.amazonSent;
+                    window.setupAdRequestSent = window.setupPrebidSent && window.setupAmazonSent;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 }
             })
@@ -83,31 +85,20 @@ console.log("AD DEBUG SETUP CALLED.");
             {
                 slots: [
                     {
-                        slotID: 'div-gpt-ad-bigbox',
-                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-bigbox',
-                        sizes: [[300, 250]]
-                    },
-                    {
                         slotID: 'div-gpt-ad-topbanner',
                         slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-topbanner',
                         sizes: [[300, 50], [320, 50]]
-                    },
-                    {
-                        slotID: 'div-gpt-ad-lowerbox',
-                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-lowerbox',
-                        sizes: [[300, 250]]
                     }
-
                 ]
             },
             function(bids) {
                 window.googletag.cmd.push(function() {
                     window.apstag.setDisplayBids();
-                    window.amazonSent = true;
-                    window.prebidSent && window.amazonSent && !window.adRequestSent
+                    window.setupAmazonSent = true;
+                    window.setupPrebidSent && window.setupAmazonSent && !window.setupAdRequestSent
                         ? Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
                         : null;
-                    window.adRequestSent = window.prebidSent && window.amazonSent;
+                    window.setupAdRequestSent = window.setupPrebidSent && window.setupAmazonSent;
                     // this.amazon = true;
                     // Advertising[sendAdServeRequest](selectedSlots);
                 });
@@ -162,21 +153,10 @@ console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
             {
                 slots: [
                     {
-                        slotID: 'div-gpt-ad-bigbox',
-                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-bigbox',
-                        sizes: [[300, 250]]
-                    },
-                    {
                         slotID: 'div-gpt-ad-topbanner',
                         slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-topbanner',
                         sizes: [[300, 50], [320, 50]]
-                    },
-                    {
-                        slotID: 'div-gpt-ad-lowerbox',
-                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-lowerbox',
-                        sizes: [[300, 250]]
                     }
-
                 ]
             },
             function(bids) {
@@ -204,6 +184,14 @@ console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
     }
 
     // ---------- PRIVATE METHODS ----------
+
+    [setupSlotBidsSent](config) {
+      for (key in config) {
+        window.adRequestSent[key] = false;
+        window.amazonSent[key] = false;
+        window.prebidSent[key] = false;
+      }
+    }
 
     [setupCustomEvents]() {
         if (!this.config.customEvents) {
@@ -355,9 +343,6 @@ console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
     [teardownGpt]() {
         this[executePlugins]('teardownGpt');
         window.googletag.destroySlots();
-        window.adRequestSent = false;
-        window.prebidSent = false;
-        window.amazonSent = false;
     }
 
     [setDefaultConfig]() {

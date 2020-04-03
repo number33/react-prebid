@@ -16,6 +16,7 @@ export default class AdvertisingProvider extends Component {
     }
 
     componentDidMount() {
+      console.log("AD PROVIDER - COMPONENT DID MOUNT");
         if (this.advertising.isConfigReady() && this.props.active) {
             this.advertising.setup();
         }
@@ -30,6 +31,9 @@ export default class AdvertisingProvider extends Component {
             this.advertising.setConfig(config);
             this.advertising.setup();
         } else if (isConfigReady && !equal(prevProps.config, config)) {
+console.log("AD PROVIDER isConfigReady", isConfigReady);
+console.log("AD PROVIDER prevProps.config", JSON.stringify(prevProps.config));
+console.log("AD PROVIDER config", JSON.stringify(config));
             // teardown the old configuration
             // to make sure the teardown and initialization are in a right sequence, need `await`
             await this.teardown();
