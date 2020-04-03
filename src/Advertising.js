@@ -47,8 +47,8 @@ export default class Advertising {
         this[setupCustomEvents]();
         await Promise.all([
             Advertising[queueForPrebid](this[setupPrebid].bind(this)),
-            Advertising[queueForGPT](this[setupGpt].bind(this)),
-            Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
+            Advertising[queueForGPT](this[setupGpt].bind(this))
+            // Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
         ]);
         if (queue.length === 0) {
             return;
@@ -61,6 +61,7 @@ export default class Advertising {
                 return (this.customEventCallbacks[customEventId][id] = customEventHandlers[customEventId]);
             });
         }
+console.log("AD DEBUG SETUP CALLED.");
         const divIds = queue.map(({ id }) => id);
         const selectedSlots = queue.map(({ id }) => slots[id] || outOfPageSlots[id]);
         Advertising[queueForPrebid](() =>
@@ -78,34 +79,13 @@ export default class Advertising {
             })
         );
 
-        Advertising[queueForAmazon]('fetchBids', [
-            {
-                slots: [
-                    {
-                        slotID: 'div-gpt-ad-bigbox',
-                        slotName: '/homepage/div-gpt-ad-bigbox',
-                        sizes: [[300, 250]]
-                    }
-                ]
-            },
-            function(bids) {
-                window.googletag.cmd.push(function() {
-                    window.apstag.setDisplayBids();
-                    window.amazonSent = true;
-                    window.prebidSent && window.amazonSent && !window.adRequestSent
-                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
-                        : null;
-                    window.adRequestSent = window.prebidSent && window.amazonSent;
-                    // this.amazon = true;
-                    // Advertising[sendAdServeRequest](selectedSlots);
-                });
-            }
-        ]);
+
         // Advertising[queueForAmazon](() => Advertising[sendAdServeRequest](selectedSlots))
     }
 
     async teardown() {
         this[teardownCustomEvents]();
+console.log("AD DEBUG TEARDOWN CALLED.");
         await Promise.all([
             Advertising[queueForPrebid](this[teardownPrebid].bind(this)),
             Advertising[queueForGPT](this[teardownGpt].bind(this))
@@ -127,15 +107,58 @@ export default class Advertising {
             }
             return (this.customEventCallbacks[customEventId][id] = customEventHandlers[customEventId]);
         });
+console.log("AD DEBUG ACTIVATE CALLED.", slots);
+console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
         Advertising[queueForPrebid](() =>
             window.pbjs.requestBids({
                 adUnitCodes: [id],
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync([id]);
-                    Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
+                    window.prebidSent = true;
+                    window.amazonSent && window.prebidSent && !window.adRequestSent
+                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
+                        : null;
+                    window.adRequestSent = window.prebidSent && window.amazonSent;
+
+                    // Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
                 }
             })
         );
+
+        Advertising[queueForAmazon]('fetchBids', [
+            {
+                slots: [
+                    {
+                        slotID: 'div-gpt-ad-bigbox',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-bigbox',
+                        sizes: [[300, 250]]
+                    },
+                    {
+                        slotID: 'div-gpt-ad-topbanner',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-topbanner',
+                        sizes: [[300, 50], [320, 50]]
+                    },
+                    {
+                        slotID: 'div-gpt-ad-lowerbox',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-lowerbox',
+                        sizes: [[300, 250]]
+                    }
+
+                ]
+            },
+            function(bids) {
+                window.googletag.cmd.push(function() {
+                    window.apstag.setDisplayBids();
+                    window.amazonSent = true;
+                    window.prebidSent && window.amazonSent && !window.adRequestSent
+                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
+                        : null;
+                    window.adRequestSent = window.prebidSent && window.amazonSent;
+                    // this.amazon = true;
+                    // Advertising[sendAdServeRequest](selectedSlots);
+                });
+            }
+        ]);
     }
 
     isConfigReady() {
@@ -339,7 +362,7 @@ export default class Advertising {
 
     static [withAmaQueue](queue, param) {
         return new Promise(resolve => {
-            // queue.apply(null, param);
+            console.log("AD DEBUG", param[0]);
             queue(...param);
             resolve();
         });
