@@ -79,7 +79,40 @@ console.log("AD DEBUG SETUP CALLED.");
             })
         );
 
+        Advertising[queueForAmazon]('fetchBids', [
+            {
+                slots: [
+                    {
+                        slotID: 'div-gpt-ad-bigbox',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-bigbox',
+                        sizes: [[300, 250]]
+                    },
+                    {
+                        slotID: 'div-gpt-ad-topbanner',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-topbanner',
+                        sizes: [[300, 50], [320, 50]]
+                    },
+                    {
+                        slotID: 'div-gpt-ad-lowerbox',
+                        slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-lowerbox',
+                        sizes: [[300, 250]]
+                    }
 
+                ]
+            },
+            function(bids) {
+                window.googletag.cmd.push(function() {
+                    window.apstag.setDisplayBids();
+                    window.amazonSent = true;
+                    window.prebidSent && window.amazonSent && !window.adRequestSent
+                        ? Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
+                        : null;
+                    window.adRequestSent = window.prebidSent && window.amazonSent;
+                    // this.amazon = true;
+                    // Advertising[sendAdServeRequest](selectedSlots);
+                });
+            }
+        ]);
         // Advertising[queueForAmazon](() => Advertising[sendAdServeRequest](selectedSlots))
     }
 
@@ -108,7 +141,7 @@ console.log("AD DEBUG TEARDOWN CALLED.");
             return (this.customEventCallbacks[customEventId][id] = customEventHandlers[customEventId]);
         });
 console.log("AD DEBUG ACTIVATE CALLED.", slots);
-console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
+console.log("AD DEBUG ACTIVATE CALLED - continued.", slots);
         Advertising[queueForPrebid](() =>
             window.pbjs.requestBids({
                 adUnitCodes: [id],
@@ -322,6 +355,9 @@ console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
     [teardownGpt]() {
         this[executePlugins]('teardownGpt');
         window.googletag.destroySlots();
+        window.adRequestSent = false;
+        window.prebidSent = false;
+        window.amazonSent = false;
     }
 
     [setDefaultConfig]() {
