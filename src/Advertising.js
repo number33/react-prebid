@@ -34,6 +34,7 @@ export default class Advertising {
         this.customEventCallbacks = {};
         this.customEventHandlers = {};
         this.queue = [];
+        this.bidsSent = [];
 
         if (config) {
             this[setDefaultConfig]();
@@ -51,7 +52,9 @@ export default class Advertising {
             Advertising[queueForGPT](this[setupGpt].bind(this))
             // Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
         ]);
-console.log("AD DEBUG SETUP QUEUE", queue);
+
+        this.config.slots.forEach((slot) => this.bidsSent[slot.id] = false)
+console.log("AD DEBUG SETUP QUEUE", this.bidsSent);
         if (queue.length === 0) {
             return;
         }
@@ -184,14 +187,6 @@ console.log("AD DEBUG ACTIVATE CALLED - continued.", id);
     }
 
     // ---------- PRIVATE METHODS ----------
-
-    [setupSlotBidsSent](config) {
-      for (key in config) {
-        window.adRequestSent[key] = false;
-        window.amazonSent[key] = false;
-        window.prebidSent[key] = false;
-      }
-    }
 
     [setupCustomEvents]() {
         if (!this.config.customEvents) {
