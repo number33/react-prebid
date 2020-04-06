@@ -145,6 +145,15 @@ export default class Advertising {
               });
             }
           ]);
+
+          Advertising[queueForGPT](() => {
+            setTimeout(() => Advertising[queueForGPT](() => {
+                if (!window.adCallSyncList[id]) {
+                  window.googletag.pubads().refresh([slots[id]]);
+                  window.adCallSyncList[id] = true;
+                }
+            }), 2000)
+          });
     }
 
     isConfigReady() {
