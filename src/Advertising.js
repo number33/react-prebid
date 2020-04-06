@@ -19,12 +19,6 @@ const queueForPrebid = Symbol('queue for Prebid (private method)');
 const setDefaultConfig = Symbol('set default config (private method)');
 const executePlugins = Symbol('execute plugins (private method)');
 
-const setupAdCallSync = Symbol("a");
-const scriptCmd = Symbol("b");
-const withAmaQueue = Symbol('with Amazon queue (private method)');
-const queueForAmazon = Symbol('queue for Amazon (private method)');
-
-
 export default class Advertising {
     constructor(config, plugins = [], onError = () => {}) {
         this.config = config;
@@ -50,8 +44,7 @@ export default class Advertising {
         this[setupCustomEvents]();
         await Promise.all([
             Advertising[queueForPrebid](this[setupPrebid].bind(this), this.onError),
-            Advertising[queueForGPT](this[setupGpt].bind(this), this.onError),
-            Advertising[scriptCmd](this[setupAdCallSync].bind(this))
+            Advertising[queueForGPT](this[setupGpt].bind(this), this.onError)
         ]);
         if (queue.length === 0) {
             return;
@@ -108,43 +101,11 @@ export default class Advertising {
                     adUnitCodes: [id],
                     bidsBackHandler() {
                         window.pbjs.setTargetingForGPTAsync([id]);
-                        // Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]), this.onError);
-
-                        Advertising[scriptCmd](() => window.adCallSyncList[id].prebidBidRequest = true);
-                        Advertising[queueForGPT](() => {
-                          if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
-                            window.googletag.pubads().refresh([slots[id]], this.onError);
-                            window.adCallSyncList[id].adRequestSent = true;
-                          }
-                        });
+                        Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]), this.onError);
                     }
                 }),
             this.onError
         );
-
-        Advertising[queueForAmazon]('fetchBids', [
-          {
-            slots: [
-              {
-                  slotID: 'div-gpt-ad-topbanner',
-                  slotName: '/19849159/web-theweathernetwork.com/homepage/div-gpt-ad-topbanner',
-                  sizes: [[300, 50], [320, 50]]
-                }
-              ]
-            },
-            function(bids) {
-              window.googletag.cmd.push(function() {
-                window.apstag.setDisplayBids();
-                Advertising[scriptCmd](() => window.adCallSyncList[id].amazonBidRequest = true);
-                Advertising[queueForGPT](() => {
-                  if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
-                    window.googletag.pubads().refresh([slots[id]]);
-                    window.adCallSyncList[id].adRequestSent = true;
-                  }
-                });
-              });
-            }
-          ]);
     }
 
     isConfigReady() {
@@ -157,17 +118,6 @@ export default class Advertising {
     }
 
     // ---------- PRIVATE METHODS ----------
-
-    [setupAdCallSync]() {
-      window.adCallSyncList = {};
-      this.config.slots.forEach((slot) => {
-        window.adCallSyncList[slot.id] = {
-          prebidBidRequest: false,
-          amazonBidRequest: false,
-          adRequestSent: false
-        };
-      });
-    }
 
     [setupCustomEvents]() {
         if (!this.config.customEvents) {
@@ -347,29 +297,5 @@ export default class Advertising {
                 }
             })
         );
-    }
-
-    static [queueForAmazon](key, param) {
-      if (key === 'init') {
-        return Advertising[withAmaQueue](window.apstag.init, param);
-      } else {
-        return Advertising[withAmaQueue](window.apstag.fetchBids, param);
-      }
-    }
-
-
-    static [withAmaQueue](queue, param) {
-      return new Promise(resolve => {
-          console.log("AD DEBUG", param[0]);
-          queue(...param);
-          resolve();
-      });
-    }
-
-    static [scriptCmd](func) {
-      return new Promise(resolve => {
-        func()
-        resolve();
-      });
     }
 }
