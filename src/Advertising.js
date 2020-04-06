@@ -20,9 +20,10 @@ const setDefaultConfig = Symbol('set default config (private method)');
 const executePlugins = Symbol('execute plugins (private method)');
 
 const setupAdCallSync = Symbol("a");
+const scriptCmd = Symbol("b");
 // const setupAmazon = Symbol('setup Amazon TAM (private method)');
-// const withAmaQueue = Symbol('with Amazon queue (private method)');
-// const queueForAmazon = Symbol('queue for Amazon (private method)');
+const withAmaQueue = Symbol('with Amazon queue (private method)');
+const queueForAmazon = Symbol('queue for Amazon (private method)');
 // const sendAdServeRequest = Symbol('Send ad requests to GAM');
 
 export default class Advertising {
@@ -51,7 +52,7 @@ console.log("AD DEBUG SETUP - IN FRUNCTION");
         await Promise.all([
             Advertising[queueForPrebid](this[setupPrebid].bind(this)),
             Advertising[queueForGPT](this[setupGpt].bind(this)),
-            Advertising[queueForGPT](this[setupAdCallSync].bind(this))
+            Advertising[scriptCmd](this[setupAdCallSync].bind(this))
             // Advertising[queueForAmazon]('init', [this[setupAmazon].bind(this)])
         ]);
 
@@ -78,7 +79,7 @@ console.log("AD DEBUG SETUP - SELECTED SLOTS ", selectedSlots);
                 adUnitCodes: divIds,
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync(divIds);
-                    // Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
+                    Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots));
                     // window.setupPrebidSent = true;
                     // window.setupAmazonSent && window.setupPrebidSent && !window.setupAdRequestSent
                     //     ? Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots))
@@ -153,8 +154,14 @@ console.log("AD DEBUG ACTIVATE CALLED cont 2 - id.", id);
                 adUnitCodes: [id],
                 bidsBackHandler() {
                     window.pbjs.setTargetingForGPTAsync([id]);
-                    Advertising[queueForGPT](() => window.adCallSyncList[slots[id]].prebidBidRequest = true);
                     Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
+                    // Advertising[scriptCmd](() => window.adCallSyncList[id].prebidBidRequest = true);
+                    // Advertising[queueForGPT](() => {
+                    //   if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
+                    //     window.googletag.pubads().refresh([slots[id]]);
+                    //     window.adCallSyncList[id].adRequestSent = true;
+                    //   }
+                    // });
 
                     // window.prebidSent = true;
                     // window.amazonSent && window.prebidSent && !window.adRequestSent
@@ -180,7 +187,13 @@ console.log("AD DEBUG ACTIVATE CALLED cont 2 - id.", id);
         //     function(bids) {
         //         window.googletag.cmd.push(function() {
         //             window.apstag.setDisplayBids();
-        //             Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
+        //             Advertising[scriptCmd](() => window.adCallSyncList[id].amazonBidRequest = true);
+        //             Advertising[queueForGPT](() => {
+        //               if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
+        //                 window.googletag.pubads().refresh([slots[id]]);
+        //                 window.adCallSyncList[id].adRequestSent = true;
+        //               }
+        //             });
         //             // window.amazonSent = true;
         //             // window.prebidSent && window.amazonSent && !window.adRequestSent
         //             //     ? Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]))
@@ -397,20 +410,20 @@ console.log("AD DEBUG ACTIVATE CALLED cont 2 - id.", id);
         return Advertising[withQueue](window.pbjs.que, func);
     }
 
-    // static [queueForAmazon](key, param) {
-    //     if (key === 'init') {
-    //         return Advertising[withAmaQueue](window.apstag.init, param);
-    //     }
-    //     return Advertising[withAmaQueue](window.apstag.fetchBids, param);
-    // }
+    static [queueForAmazon](key, param) {
+        if (key === 'init') {
+            return Advertising[withAmaQueue](window.apstag.init, param);
+        }
+        return Advertising[withAmaQueue](window.apstag.fetchBids, param);
+    }
 
-    // static [withAmaQueue](queue, param) {
-    //     return new Promise(resolve => {
-    //         console.log("AD DEBUG", param[0]);
-    //         queue(...param);
-    //         resolve();
-    //     });
-    // }
+    static [withAmaQueue](queue, param) {
+        return new Promise(resolve => {
+            console.log("AD DEBUG", param[0]);
+            queue(...param);
+            resolve();
+        });
+    }
 
     static [withQueue](queue, func) {
         return new Promise(resolve =>
@@ -419,5 +432,12 @@ console.log("AD DEBUG ACTIVATE CALLED cont 2 - id.", id);
                 resolve();
             })
         );
+    }
+
+    static [scriptCmd](func) {
+      return new Promise(resolve => {
+        func()
+        resolve();
+      })
     }
 }
