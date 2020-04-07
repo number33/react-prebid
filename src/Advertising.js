@@ -108,11 +108,9 @@ export default class Advertising {
                     adUnitCodes: [id],
                     bidsBackHandler() {
                         window.pbjs.setTargetingForGPTAsync([id]);
-                        // Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]), this.onError);
                         if (window.adCallSyncList.hasOwnProperty(id)) {
                           window.adCallSyncList[id].prebidBidRequest = true;
                           console.debug("ACTIVE() - PREBID BID CALLBACK SLOTID '" + id +"'");
-                          // Advertising[scriptCmd](() => window.adCallSyncList[id].prebidBidRequest = true);
                           Advertising[queueForGPT](() => {
                             if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
                               window.googletag.pubads().refresh([slots[id]], this.onError);
@@ -155,14 +153,16 @@ export default class Advertising {
           ]);
 
           Advertising[scriptCmd](() => {
-            window.setTimeout(() => {
-              console.debug("ACTIVE() - fallback triggered for '"+ id +"'");
-              if (!window.adCallSyncList[id].adRequestSent) {
-                console.debug("ACTIVE() - Ad call for slotid '" + id +"' has not been sent");
-                Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
-                window.adCallSyncList[id].adRequestSent = true;
-              }
-            }, 2000);
+            if (window.adCallSyncList.hasOwnProperty(id)) {
+              window.setTimeout(() => {
+                console.debug("ACTIVE() - fallback triggered for '"+ id +"'");
+                if (!window.adCallSyncList[id].adRequestSent) {
+                  console.debug("ACTIVE() - Ad call for slotid '" + id +"' has not been sent");
+                  Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
+                  window.adCallSyncList[id].adRequestSent = true;
+                }
+              }, 2000);
+            }
           });
           // Advertising[queueForGPT](() => {
           //   setTimeout(() => Advertising[queueForGPT](() => {
