@@ -66,6 +66,8 @@ export default class Advertising {
         }
         const divIds = queue.map(({ id }) => id);
         const selectedSlots = queue.map(({ id }) => slots[id] || outOfPageSlots[id]);
+        console.log("SETUP() - QUEUE", queue);
+        console.log("SETUP() - selectedSlots", selectedSlots);
         Advertising[queueForPrebid](
             () =>
                 window.pbjs.requestBids({
@@ -137,17 +139,17 @@ export default class Advertising {
             function(bids) {
               window.googletag.cmd.push(function() {
                 window.apstag.setDisplayBids();
-                if (window.adCallSyncList.hasOwnProperty(id)) {
+                // if (window.adCallSyncList.hasOwnProperty(id)) {
                   window.adCallSyncList[id].amazonBidRequest = true
                   console.debug("ACTIVE() - AMAZON BID CALLBACK  SLOTID '" + id +"'");
                   Advertising[queueForGPT](() => {
-                    // if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
+                    if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
                       window.googletag.pubads().refresh([slots[id]]);
                       window.adCallSyncList[id].adRequestSent = true;
                       console.debug("ACTIVE() - AMAZON CALLED REFRESH  SLOTID '" + id +"'");
-                    // }
+                    }
                   });
-                }
+                // }
               });
             }
           ]);
