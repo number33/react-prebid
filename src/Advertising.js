@@ -82,8 +82,7 @@ export default class Advertising {
                         Advertising[scriptCmd](() => {
                           console.debug("SETUP() - PREBID - BIDS FOR QUEUED AD SLOTS");
                           for (let x = 0; x < divIds.length; x++) {
-                              window.adCallSyncList[divIds[x]][prebidBidRequest] = true;
-                            };
+                            window.adCallSyncList[divIds[x]][prebidBidRequest] = true;
                           }
                         });
                         if (window.adCallSyncList.every((divId) => window.adCallSyncList[divId].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
@@ -112,8 +111,7 @@ export default class Advertising {
                 Advertising[scriptCmd](() => {
                   for (let x = 0; x < divIds.length; x++) {
                     window.adCallSyncList[divIds[x]][amazonBidRequest] = true;
-                  };
-                }
+                  }
               });
 
               if (window.adCallSyncList.every((divId) => window.adCallSyncList[divId].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
