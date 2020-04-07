@@ -108,7 +108,7 @@ export default class Advertising {
                     adUnitCodes: [id],
                     bidsBackHandler() {
                         window.pbjs.setTargetingForGPTAsync([id]);
-                        if (window.adCallSyncList.hasOwnProperty(id)) {
+                        // if (window.adCallSyncList.hasOwnProperty(id)) {
                           window.adCallSyncList[id].prebidBidRequest = true;
                           console.debug("ACTIVE() - PREBID BID CALLBACK SLOTID '" + id +"'");
                           Advertising[queueForGPT](() => {
@@ -118,7 +118,7 @@ export default class Advertising {
                               console.debug("ACTIVE() - PREBID CALLED REFRESH  SLOTID '" + id +"'");
                             }
                           });
-                        }
+                        // }
                     }
                 }),
             this.onError
@@ -141,11 +141,11 @@ export default class Advertising {
                   window.adCallSyncList[id].amazonBidRequest = true
                   console.debug("ACTIVE() - AMAZON BID CALLBACK  SLOTID '" + id +"'");
                   Advertising[queueForGPT](() => {
-                    if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
+                    // if (window.adCallSyncList[id].amazonBidRequest && window.adCallSyncList[id].prebidBidRequest && !window.adCallSyncList[id].adRequestSent) {
                       window.googletag.pubads().refresh([slots[id]]);
                       window.adCallSyncList[id].adRequestSent = true;
                       console.debug("ACTIVE() - AMAZON CALLED REFRESH  SLOTID '" + id +"'");
-                    }
+                    // }
                   });
                 }
               });
@@ -156,11 +156,11 @@ export default class Advertising {
             if (window.adCallSyncList.hasOwnProperty(id)) {
               window.setTimeout(() => {
                 console.debug("ACTIVE() - fallback triggered for '"+ id +"'");
-                if (!window.adCallSyncList[id].adRequestSent) {
+                // if (!window.adCallSyncList[id].adRequestSent) {
                   console.debug("ACTIVE() - Ad call for slotid '" + id +"' has not been sent");
                   Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
                   window.adCallSyncList[id].adRequestSent = true;
-                }
+                // }
               }, 2000);
             }
           });
