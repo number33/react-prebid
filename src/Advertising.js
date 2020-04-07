@@ -85,19 +85,13 @@ export default class Advertising {
                             window.adCallSyncList[divIds[x]].prebidBidRequest = true;
                           }
                         });
-                        const syncList = [];
-                        for (const adSlot of window.adCallSyncList) {
-                          syncList.push(
-                            {
-                              id: adSlot,
-                              amazonBidRequest: window.adCallSyncList.adSlot.amazonBidRequest,
-                              prebidBidRequest: window.adCallSyncList.adSlot.prebidBidRequest,
-                              adRequestSent: window.adCallSyncList.adSlot.adRequestSent
-                            }
-                          )
-                        }
-                        console.log(syncList);
-                        if (window.adCallSyncList.every((adSlot) => window.adCallSyncList[adSlot].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
+                        window.tempSyncList = Object.entries(window.adCallSyncList);
+                        window.syncList = window.tempSyncList.filter((adSlot) => divIds.find(divId => adSlot[0] === divId) >= 0 );
+                        if (window.syncList.every((adSlot) => {
+
+                              window.adCallSyncList[adSlot].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent
+                            })
+                        ) {
                           console.debug("SETUP() - PREBID CALLED REFRESH");
                           Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots), this.onError);
                         }
