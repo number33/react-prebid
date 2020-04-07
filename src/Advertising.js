@@ -82,8 +82,7 @@ export default class Advertising {
                         Advertising[scriptCmd](() => {
                           console.debug("SETUP() - PREBID - BIDS FOR QUEUED AD SLOTS");
                           for (let x = 0; x < divIds.length; x++) {
-                            window.adCallSyncList[divIds[x]] = {
-                              prebidBidRequest: true,
+                              window.adCallSyncList[divIds[x]][prebidBidRequest] = true;
                             };
                           }
                         });
@@ -112,16 +111,15 @@ export default class Advertising {
                 console.debug("SETUP() - AMAZON - BIDS FOR QUEUED AD SLOTS");
                 Advertising[scriptCmd](() => {
                   for (let x = 0; x < divIds.length; x++) {
-                    window.adCallSyncList[divIds[x]] = {
-                      amazonBidRequest: true,
-                    };
-                  }
-                });
-
-                if (window.adCallSyncList.every((divId) => window.adCallSyncList[divId].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
-                  console.debug("SETUP() - AMAZON CALLED REFRESH");
-                  Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots), this.onError);
+                    window.adCallSyncList[divIds[x]][amazonBidRequest] = true;
+                  };
                 }
+              });
+
+              if (window.adCallSyncList.every((divId) => window.adCallSyncList[divId].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
+                console.debug("SETUP() - AMAZON CALLED REFRESH");
+                Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots), this.onError);
+              }
             });
           }
         ]);
@@ -212,14 +210,6 @@ export default class Advertising {
             }, 2000);
           }
         });
-          // Advertising[queueForGPT](() => {
-          //   setTimeout(() => Advertising[queueForGPT](() => {
-          //       if (!window.adCallSyncList[id]) {
-          //         window.googletag.pubads().refresh([slots[id]]);
-          //         window.adCallSyncList[id] = true;
-          //       }
-          //   }), 2000)
-          // });
     }
 
     isConfigReady() {
