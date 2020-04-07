@@ -158,11 +158,11 @@ export default class Advertising {
             if (window.adCallSyncList.hasOwnProperty(id)) {
               window.setTimeout(() => {
                 console.debug("ACTIVE() - fallback triggered for '"+ id +"'");
-                // if (!window.adCallSyncList[id].adRequestSent) {
+                if (!window.adCallSyncList[id].adRequestSent) {
                   console.debug("ACTIVE() - Ad call for slotid '" + id +"' has not been sent");
                   Advertising[queueForGPT](() => window.googletag.pubads().refresh([slots[id]]));
                   window.adCallSyncList[id].adRequestSent = true;
-                // }
+                }
               }, 2000);
             }
           });
