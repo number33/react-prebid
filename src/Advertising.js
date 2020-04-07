@@ -70,7 +70,7 @@ export default class Advertising {
         const selectedSlots = queue.map(({ id }) => slots[id] || outOfPageSlots[id]);
         const selectedSlotsBidStatus = {};
         console.debug("SETUP() - QUEUE", queue);
-        console.debug("SETUP() - selectedSlots", selectedSlots);
+        console.debug("SETUP() - divIds", divIds);
         Advertising[queueForPrebid](
             () =>
                 window.pbjs.requestBids({
@@ -82,10 +82,22 @@ export default class Advertising {
                         Advertising[scriptCmd](() => {
                           console.debug("SETUP() - PREBID - BIDS FOR QUEUED AD SLOTS");
                           for (let x = 0; x < divIds.length; x++) {
-                            window.adCallSyncList[divIds[x]][prebidBidRequest] = true;
+                            window.adCallSyncList[divIds[x]].prebidBidRequest = true;
                           }
                         });
-                        if (window.adCallSyncList.every((divId) => window.adCallSyncList[divId].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
+                        const syncList = [];
+                        for (const adSlot of window.adCallSyncList) {
+                          syncList.push(
+                            {
+                              id: adSlot,
+                              amazonBidRequest: window.adCallSyncList.adSlot.amazonBidRequest,
+                              prebidBidRequest: window.adCallSyncList.adSlot.prebidBidRequest,
+                              adRequestSent: window.adCallSyncList.adSlot.adRequestSent
+                            }
+                          )
+                        }
+                        console.log(syncList);
+                        if (window.adCallSyncList.every((adSlot) => window.adCallSyncList[adSlot].amazonBidRequest && window.adCallSyncList[divId].prebidBidRequest && !window.adCallSyncList[divId].adRequestSent)) {
                           console.debug("SETUP() - PREBID CALLED REFRESH");
                           Advertising[queueForGPT](() => window.googletag.pubads().refresh(selectedSlots), this.onError);
                         }
@@ -110,7 +122,7 @@ export default class Advertising {
                 console.debug("SETUP() - AMAZON - BIDS FOR QUEUED AD SLOTS");
                 Advertising[scriptCmd](() => {
                   for (let x = 0; x < divIds.length; x++) {
-                    window.adCallSyncList[divIds[x]][amazonBidRequest] = true;
+                    window.adCallSyncList[divIds[x]].amazonBidRequest = true;
                   }
               });
 
@@ -135,6 +147,7 @@ export default class Advertising {
     }
 
     activate(id, customEventHandlers = {}) {
+        console.debug("ACTIVE() - CALLED");
         const { slots } = this;
         if (Object.values(slots).length === 0) {
             this.queue.push({ id, customEventHandlers });
@@ -152,7 +165,6 @@ export default class Advertising {
                     adUnitCodes: [id],
                     bidsBackHandler() {
                         window.pbjs.setTargetingForGPTAsync([id]);
-                        // if (window.adCallSyncList.hasOwnProperty(id)) {
                           window.adCallSyncList[id].prebidBidRequest = true;
                           console.debug("ACTIVE() - PREBID BID CALLBACK SLOTID '" + id +"'");
                           Advertising[queueForGPT](() => {
@@ -162,7 +174,6 @@ export default class Advertising {
                               console.debug("ACTIVE() - PREBID CALLED REFRESH  SLOTID '" + id +"'");
                             }
                           });
-                        // }
                     }
                 }),
             this.onError
@@ -222,6 +233,14 @@ export default class Advertising {
     // ---------- PRIVATE METHODS ----------
 
     [setupAdCallSync]() {
+      // window.adCallSyncList = new Map();
+      // this.config.slots.forEach((slot) => {
+      //   window.adCallSyncList.set(slot.id, {
+      //         prebidBidRequest: false,
+      //         amazonBidRequest: false,
+      //         adRequestSent: false
+      //   });
+      // }
       window.adCallSyncList = {};
       this.config.slots.forEach((slot) => {
         window.adCallSyncList[slot.id] = {
